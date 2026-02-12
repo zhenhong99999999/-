@@ -1,5 +1,5 @@
-import React, { useRef } from 'react';
-import { FileText, Play, RotateCcw, Upload } from 'lucide-react';
+import React, { useRef, useImperativeHandle, forwardRef } from 'react';
+import { FileText, Play, RotateCcw, Upload, Plus } from 'lucide-react';
 
 interface InputSectionProps {
   transcript: string;
@@ -10,14 +10,14 @@ interface InputSectionProps {
   onReset: () => void;
 }
 
-export const InputSection: React.FC<InputSectionProps> = ({
+export const InputSection = forwardRef<HTMLTextAreaElement, InputSectionProps>(({
   transcript,
   setTranscript,
   onGenerate,
   isGenerating,
   hasReport,
   onReset,
-}) => {
+}, ref) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -31,20 +31,31 @@ export const InputSection: React.FC<InputSectionProps> = ({
         setTranscript(content);
       }
     };
-    reader.readAsText(file); // Default is UTF-8
-    
-    // Reset value to allow re-uploading the same file
+    reader.readAsText(file); 
     event.target.value = '';
   };
 
   return (
-    <div className="flex flex-col h-full bg-white border-r border-slate-200">
-      <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-        <h2 className="font-semibold text-slate-700 flex items-center gap-2">
-          <FileText size={18} />
-          逐字稿输入
+    <div className="flex flex-col h-full">
+      <div className="p-6 border-b border-black/5 flex justify-between items-center bg-white/40">
+        <h2 className="font-bold text-slate-800 flex items-center gap-2.5 text-lg tracking-tight">
+          <div className="p-1.5 bg-white rounded-lg shadow-sm border border-slate-100 text-slate-700">
+             <FileText size={16} />
+          </div>
+          素材来源
         </h2>
-        <div className="flex items-center gap-3">
+        
+        <div className="flex items-center gap-2">
+           {hasReport && (
+             <button
+             onClick={onReset}
+             disabled={isGenerating}
+             className="w-8 h-8 flex items-center justify-center rounded-full text-slate-500 hover:bg-red-50 hover:text-red-500 transition-all"
+             title="新建"
+           >
+             <RotateCcw size={16} />
+           </button>
+          )}
           <input 
             type="file" 
             ref={fileInputRef} 
@@ -56,64 +67,52 @@ export const InputSection: React.FC<InputSectionProps> = ({
           <button
              onClick={() => fileInputRef.current?.click()}
              disabled={isGenerating}
-             className="text-xs text-slate-500 hover:text-blue-600 flex items-center gap-1 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-             title="上传文件"
+             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 bg-white border border-slate-200 rounded-full hover:bg-slate-50 hover:shadow-sm transition-all"
           >
-            <Upload size={14} />
-            <span className="hidden sm:inline">导入</span>
+            <Plus size={14} />
+            导入
           </button>
-          
-          {hasReport && (
-             <button
-             onClick={onReset}
-             disabled={isGenerating}
-             className="text-xs text-slate-500 hover:text-red-500 flex items-center gap-1 transition-colors disabled:opacity-50"
-             title="清空并新建"
-           >
-             <RotateCcw size={14} />
-             <span className="hidden sm:inline">新建</span>
-           </button>
-          )}
         </div>
       </div>
       
-      <div className="flex-1 p-4">
+      <div className="flex-1 relative group">
         <textarea
-          className="w-full h-full p-4 text-sm text-slate-700 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none placeholder:text-slate-400 font-mono leading-relaxed"
-          placeholder="请在此粘贴您的访谈逐字稿...
-或者点击右上角“导入”按钮上传文本文件。
-示例：
-访谈者：您对这个新功能感觉如何？
-用户：老实说，我觉得设置入口有点难找..."
+          ref={ref}
+          className="w-full h-full p-6 text-sm text-slate-700 bg-transparent outline-none resize-none placeholder:text-slate-400 font-mono leading-relaxed transition-colors selection:bg-yellow-200 selection:text-black"
+          placeholder="在此粘贴访谈逐字稿，或点击右上角导入文件..."
           value={transcript}
           onChange={(e) => setTranscript(e.target.value)}
           disabled={isGenerating}
         />
+        {/* Gradient overlay at bottom of textarea for visual polish */}
+        <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-white/80 to-transparent pointer-events-none"></div>
       </div>
 
-      <div className="p-4 border-t border-slate-100 bg-slate-50">
+      <div className="p-6 border-t border-black/5 bg-white/40 backdrop-blur-sm">
         <button
           onClick={onGenerate}
           disabled={!transcript.trim() || isGenerating}
-          className={`w-full py-3 px-4 rounded-lg flex items-center justify-center gap-2 font-medium transition-all shadow-sm ${
+          className={`w-full py-3.5 px-4 rounded-2xl flex items-center justify-center gap-2 font-semibold tracking-wide transition-all duration-300 shadow-sm ${
             !transcript.trim() || isGenerating
-              ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
-              : 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-md active:transform active:scale-[0.98]'
+              ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
+              : 'bg-black text-white hover:bg-slate-800 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0'
           }`}
         >
           {isGenerating ? (
             <>
-              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              分析中...
+              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              正在深度分析...
             </>
           ) : (
             <>
-              <Play size={18} fill="currentColor" />
-              生成洞察
+              <Play size={16} fill="currentColor" />
+              生成洞察报告
             </>
           )}
         </button>
       </div>
     </div>
   );
-};
+});
+
+InputSection.displayName = 'InputSection';
